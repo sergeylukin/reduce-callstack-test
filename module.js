@@ -6,63 +6,68 @@ window.calculateInsightsBoundariesInFgData = function (
   end = 0,
   insightsBoundaries = {}
 ) {
-  const reduceFgData = function (accumulator, entry) {
-    const { value: duration, insight = null } = entry;
-    accumulator.start = start;
-    accumulator.end = start + duration;
-    if (insight) {
-      if (!accumulator.insightsBoundaries.hasOwnProperty(insight)) {
-        accumulator.insightsBoundaries[insight] = {
-          start,
-          end,
-        };
-      } else {
-        if (end > accumulator.insightsBoundaries[insight].end) {
-          accumulator.insightsBoundaries[insight].end = end;
+  try {
+    const reduceFgData = function (accumulator, entry) {
+      const { value: duration, insight = null } = entry;
+      accumulator.start = start;
+      accumulator.end = start + duration;
+      if (insight) {
+        if (!accumulator.insightsBoundaries.hasOwnProperty(insight)) {
+          accumulator.insightsBoundaries[insight] = {
+            start,
+            end,
+          };
+        } else {
+          if (end > accumulator.insightsBoundaries[insight].end) {
+            accumulator.insightsBoundaries[insight].end = end;
+          }
         }
       }
-    }
-    if (entry.children) {
-      const parseChildren = function (child, index) {
-        const currentPosition = _.sumBy(
-          _.slice(entry.children, 0, index),
-          "value"
-        );
-        accumulator = {
-          ...window.calculateInsightsBoundariesInFgData(
-            child,
-            start + currentPosition,
-            start + currentPosition + child.value,
-            { ...accumulator.insightsBoundaries }
-          ),
+      if (entry.children) {
+        const parseChildren = function (child, index) {
+          const currentPosition = _.sumBy(
+            _.slice(entry.children, 0, index),
+            "value"
+          );
+          accumulator = {
+            ...window.calculateInsightsBoundariesInFgData(
+              child,
+              start + currentPosition,
+              start + currentPosition + child.value,
+              { ...accumulator.insightsBoundaries }
+            ),
+          };
         };
-      };
-      entry.children.forEach(parseChildren);
-    }
-    return accumulator;
-  };
-  const data = (Array.isArray(fgData) ? fgData : [fgData]).reduce(
-    reduceFgData,
-    {
-      start,
-      end,
-      insightsBoundaries,
-    }
-  );
+        entry.children.forEach(parseChildren);
+      }
+      return accumulator;
+    };
+    const data = (Array.isArray(fgData) ? fgData : [fgData]).reduce(
+      reduceFgData,
+      {
+        start,
+        end,
+        insightsBoundaries,
+      }
+    );
 
-  if (start > 0) return data;
+    if (start > 0) return data;
 
-  for (const key in data.insightsBoundaries) {
-    const boundaries = data.insightsBoundaries[key];
-    const offset = (boundaries.end - boundaries.start) / 5;
-    const start = boundaries.start - offset;
-    const end = boundaries.end + offset;
-    data.insightsBoundaries[key].start = start > 0 ? start : boundaries.start;
-    data.insightsBoundaries[key].end = end < data.end ? end : boundaries.end;
-    console.trace("calculateInsightsBoundariesInFgData trace");
+    for (const key in data.insightsBoundaries) {
+      const boundaries = data.insightsBoundaries[key];
+      const offset = (boundaries.end - boundaries.start) / 5;
+      const start = boundaries.start - offset;
+      const end = boundaries.end + offset;
+      data.insightsBoundaries[key].start = start > 0 ? start : boundaries.start;
+      data.insightsBoundaries[key].end = end < data.end ? end : boundaries.end;
+      console.trace("calculateInsightsBoundariesInFgData trace");
+    }
+    throw "Deliberate Error!";
+    return data.insightsBoundaries;
+  } catch (err) {
+    window.airbrake.notify(err);
+    throw err;
   }
-  throw "Deliberate Error!";
-  return data.insightsBoundaries;
 };
 
 window.dataSet = {
