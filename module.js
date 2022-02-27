@@ -65,7 +65,6 @@ window.calculateInsightsBoundariesInFgData = function (
     throw "Deliberate Error!";
     return data.insightsBoundaries;
   } catch (err) {
-    window.airbrake.notify(err);
     throw err;
   }
 };
